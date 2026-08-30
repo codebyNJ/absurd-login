@@ -182,12 +182,15 @@ function Serving({ index, total, onOne }: { index: number; total: number; onOne:
 }
 
 function Login({ onWrong, onRight }: { onWrong: () => void; onRight: () => void }) {
-  const [pw, setPw] = useState("");
+  // Uncontrolled + read from the DOM on submit, so a password manager / autofill
+  // that doesn't trigger React onChange can't leave us comparing a stale value.
+  const ref = useRef<HTMLInputElement>(null);
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (pw === PASSWORD) onRight();
+        const val = (ref.current?.value ?? "").trim();
+        if (val.toLowerCase() === PASSWORD.toLowerCase()) onRight();
         else onWrong();
       }}
       className="space-y-4 pt-6"
@@ -195,9 +198,12 @@ function Login({ onWrong, onRight }: { onWrong: () => void; onRight: () => void 
       <h1 className="text-2xl font-semibold">Log in</h1>
       <p className="text-sm text-neutral-500">Use the password. The real one.</p>
       <input
+        ref={ref}
         type="password"
-        value={pw}
-        onChange={(e) => setPw(e.target.value)}
+        name="pw"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
         placeholder="password"
         className="w-full rounded border border-neutral-300 px-3 py-2"
       />
