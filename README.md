@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 404: The Login You Deserve
 
-## Getting Started
+A deliberately **user-hostile** login system. It is engineered to punish anyone who tries to use it. The whole thing is the joke.
 
-First, run the development server:
+Built with Next.js (App Router), fully client-side — no backend, no database. State lives in `localStorage`; the video gate uses the raw YouTube IFrame API.
+
+## The flow
+
+1. **`/` — the trap.** A pixel-faithful Google *"404. That's an error."* page. The `404.` looks like plain heading text (no button, default cursor) but is secretly the login portal.
+2. **Cookie ambush.** "Reject all" refuses to work; "Accept all" runs from your cursor until it gives up.
+3. **Forced signup:**
+   - A username + **a password you will never use** (login ignores it).
+   - **Life Score quiz** — caffeine/tabs/will-to-live sliders + a "select all squares containing regret" captcha. Score must land in an arbitrary band; too well-adjusted = denied.
+   - **Unskippable onboarding video** — seek, pause, mute, or switch tabs and it slams back to `0:00`. The real password flashes on screen for ~2.5s near the end.
+   - **T&C trap** that yanks you back to the top, and a **reverse captcha** ("I am a robot").
+   - A **Create account** button that teleports until every gate is green.
+4. **Login.** Hardcoded password. Wrong once = 1 punishment video, twice = 2, thrice = 3… (punishment videos flash *fake* passwords). The counter is persisted, so refreshing doesn't save you.
+5. **`/welcome` — the payoff.** A blank page: *"There was nothing here anyway."*
+
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **`/login?dev`** shortens each video to ~6s so you can demo the whole gauntlet without sitting through full Rickrolls.
+- Two on-brand escapes are left in as easter eggs: the password is `console.log`'d in devtools, and `?dev` exists.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `lib/absurd.ts` — all config + pure logic (password, decoys, life-score formula, sentence math, storage)
+- `app/_components/VideoGate.tsx` — the unskippable player
+- `app/_components/LifeScore.tsx` — the absurd quiz
+- `app/page.tsx` / `app/login/page.tsx` / `app/welcome/page.tsx` — the pages
