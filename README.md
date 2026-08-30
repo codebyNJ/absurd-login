@@ -1,5 +1,7 @@
 # 404: The Login You Deserve
 
+**Live demo → https://absurd-login.vercel.app/** (tip: the `404` on the first page is the login button)
+
 A deliberately **user-hostile** login system. It is engineered to punish anyone who tries to use it. The whole thing is the joke.
 
 Built with Next.js (App Router), fully client-side — no backend, no database. State lives in `localStorage`; the video gate uses the raw YouTube IFrame API.
