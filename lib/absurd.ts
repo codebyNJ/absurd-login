@@ -64,10 +64,12 @@ export interface Saved {
   account: { username: string } | null;
   failCount: number;
   sentence: number;
+  videos: number; // total videos endured this run
+  runStart: number; // ms timestamp when they entered the gauntlet
 }
 
 const KEY = "absurd:v1";
-const DEFAULTS: Saved = { account: null, failCount: 0, sentence: 0 };
+const DEFAULTS: Saved = { account: null, failCount: 0, sentence: 0, videos: 0, runStart: 0 };
 
 export function loadState(): Saved {
   if (typeof window === "undefined") return { ...DEFAULTS };
@@ -84,4 +86,53 @@ export function saveState(s: Saved): void {
 
 export function resetState(): void {
   if (typeof window !== "undefined") localStorage.removeItem(KEY);
+}
+
+// ---- Leaderboard: the Hall of Shame (local to this browser — one booth laptop) ----
+
+export interface LeaderRow {
+  name: string;
+  ms: number; // time to escape
+  fails: number; // wrong password guesses
+  videos: number; // videos endured
+  at: number; // finished-at timestamp
+}
+
+export const BOARD_KEY = "absurd:leaderboard";
+const LAST_KEY = "absurd:lastrun";
+
+export function loadBoard(): LeaderRow[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(BOARD_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function addToBoard(row: LeaderRow): void {
+  if (typeof window === "undefined") return;
+  const board = loadBoard();
+  board.push(row);
+  localStorage.setItem(BOARD_KEY, JSON.stringify(board));
+  localStorage.setItem(LAST_KEY, JSON.stringify(row));
+}
+
+export function clearBoard(): void {
+  if (typeof window !== "undefined") localStorage.removeItem(BOARD_KEY);
+}
+
+export function getLastRun(): LeaderRow | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const s = localStorage.getItem(LAST_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function fmtTime(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }

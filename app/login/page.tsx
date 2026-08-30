@@ -12,6 +12,7 @@ import {
   penaltyFor,
   loadState,
   saveState,
+  addToBoard,
   type Saved,
 } from "@/lib/absurd";
 
@@ -59,15 +60,26 @@ function TeleportButton({
 export default function Gauntlet() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [state, setState] = useState<Saved>({ account: null, failCount: 0, sentence: 0 });
+  const [state, setState] = useState<Saved>({ account: null, failCount: 0, sentence: 0, videos: 0, runStart: 0 });
   const [cookiesOk, setCookiesOk] = useState(false);
   const [served, setServed] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    setState(loadState());
+    const s = loadState();
+    if (!s.runStart) s.runStart = Date.now(); // start the clock the moment they enter
+    saveState(s);
+    setState(s);
     setMounted(true);
   }, []);
+
+  function bumpVideos() {
+    setState((prev) => {
+      const next = { ...prev, videos: (prev.videos || 0) + 1 };
+      saveState(next);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (state.account) {
@@ -103,8 +115,13 @@ export default function Gauntlet() {
             index={served}
             total={state.sentence}
             onOne={() => {
-              if (served + 1 >= state.sentence) {
-                persist({ ...state, sentence: 0 });
+              const last = served + 1 >= state.sentence;
+              setState((prev) => {
+                const next = { ...prev, videos: (prev.videos || 0) + 1, sentence: last ? 0 : prev.sentence };
+                saveState(next);
+                return next;
+              });
+              if (last) {
                 setServed(0);
                 popToast("Sentence served. Try again.");
               } else {
@@ -115,8 +132,9 @@ export default function Gauntlet() {
         ) : !state.account ? (
           <Signup
             onToast={popToast}
+            onVideo={bumpVideos}
             onDone={(username) => {
-              persist({ account: { username }, failCount: 0, sentence: 0 });
+              persist({ ...state, account: { username }, failCount: 0, sentence: 0 });
               popToast("Account created. Now log in — NOT with the password you just set. Obviously.");
             }}
           />
@@ -129,7 +147,16 @@ export default function Gauntlet() {
               setServed(0);
               popToast(`Wrong. That's ${sentence} video(s).`);
             }}
-            onRight={() => router.push("/welcome")}
+            onRight={() => {
+              addToBoard({
+                name: state.account?.username || "anonymous",
+                ms: Date.now() - (state.runStart || Date.now()),
+                fails: state.failCount,
+                videos: state.videos || 0,
+                at: Date.now(),
+              });
+              router.push("/welcome");
+            }}
           />
         )}
       </div>
@@ -181,7 +208,15 @@ function Login({ onWrong, onRight }: { onWrong: () => void; onRight: () => void 
   );
 }
 
-function Signup({ onDone, onToast }: { onDone: (username: string) => void; onToast: (m: string) => void }) {
+function Signup({
+  onDone,
+  onToast,
+  onVideo,
+}: {
+  onDone: (username: string) => void;
+  onToast: (m: string) => void;
+  onVideo: () => void;
+}) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [lifePassed, setLifePassed] = useState(false);
@@ -233,7 +268,10 @@ function Signup({ onDone, onToast }: { onDone: (username: string) => void; onToa
               videoId={SIGNUP_VIDEO}
               reveal={PASSWORD}
               label="Onboarding video (mandatory)"
-              onComplete={() => setVideoWatched(true)}
+              onComplete={() => {
+                setVideoWatched(true);
+                onVideo();
+              }}
             />
           </div>
         ) : (
