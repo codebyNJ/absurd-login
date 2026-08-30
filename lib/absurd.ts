@@ -1,9 +1,5 @@
 // The one place all the cruelty is configured. No backend, no DB — just spite.
 
-// The ONE true password. Revealed only via an overlay near the end of the signup video.
-// (Also whispered in the console for anyone who opens devtools. On brand.)
-export const PASSWORD = "hunter2";
-
 // Fake passwords flashed during punishment videos to send you down the wrong path.
 export const DECOYS = [
   "password",
@@ -61,7 +57,7 @@ export function penaltyFor(failCount: number): number {
 // ---- Persistence (survives refresh, so refreshing never saves you) ----
 
 export interface Saved {
-  account: { username: string } | null;
+  account: { username: string; password: string } | null;
   failCount: number;
   sentence: number;
   videos: number; // total videos endured this run

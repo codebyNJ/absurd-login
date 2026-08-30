@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import VideoGate from "@/app/_components/VideoGate";
 import LifeScore from "@/app/_components/LifeScore";
 import {
-  PASSWORD,
   SIGNUP_VIDEO,
   punishmentVideo,
   randDecoy,
@@ -83,8 +82,8 @@ export default function Gauntlet() {
 
   useEffect(() => {
     if (state.account) {
-      // On brand: the real password is also whispered to anyone who opens devtools.
-      console.log("%c🤫 psst — the password is: " + PASSWORD, "font-size:16px;color:#e11");
+      // On brand: whisper the password to anyone who opens devtools.
+      console.log("%c🤫 psst — your password is: " + state.account.password, "font-size:16px;color:#e11");
     }
   }, [state.account]);
 
@@ -133,13 +132,14 @@ export default function Gauntlet() {
           <Signup
             onToast={popToast}
             onVideo={bumpVideos}
-            onDone={(username) => {
-              persist({ ...state, account: { username }, failCount: 0, sentence: 0 });
-              popToast("Account created. Now log in — NOT with the password you just set. Obviously.");
+            onDone={(username, password) => {
+              persist({ ...state, account: { username, password }, failCount: 0, sentence: 0 });
+              popToast("Account created. Now log in with the password you just set. Try to remember it.");
             }}
           />
         ) : (
           <Login
+            expected={state.account?.password || ""}
             onWrong={() => {
               const failCount = state.failCount + 1;
               const sentence = penaltyFor(failCount);
@@ -181,7 +181,7 @@ function Serving({ index, total, onOne }: { index: number; total: number; onOne:
   );
 }
 
-function Login({ onWrong, onRight }: { onWrong: () => void; onRight: () => void }) {
+function Login({ expected, onWrong, onRight }: { expected: string; onWrong: () => void; onRight: () => void }) {
   // Uncontrolled + read from the DOM on submit, so a password manager / autofill
   // that doesn't trigger React onChange can't leave us comparing a stale value.
   const ref = useRef<HTMLInputElement>(null);
@@ -190,13 +190,13 @@ function Login({ onWrong, onRight }: { onWrong: () => void; onRight: () => void 
       onSubmit={(e) => {
         e.preventDefault();
         const val = (ref.current?.value ?? "").trim();
-        if (val.toLowerCase() === PASSWORD.toLowerCase()) onRight();
+        if (val.toLowerCase() === expected.trim().toLowerCase()) onRight();
         else onWrong();
       }}
       className="space-y-4 pt-6"
     >
       <h1 className="text-2xl font-semibold">Log in</h1>
-      <p className="text-sm text-neutral-500">Use the password. The real one.</p>
+      <p className="text-sm text-neutral-500">Use the password you set. If you remember it.</p>
       <input
         ref={ref}
         type="password"
@@ -219,7 +219,7 @@ function Signup({
   onToast,
   onVideo,
 }: {
-  onDone: (username: string) => void;
+  onDone: (username: string, password: string) => void;
   onToast: (m: string) => void;
   onVideo: () => void;
 }) {
@@ -253,7 +253,7 @@ function Signup({
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="a password you will never, ever use"
+          placeholder="choose a password (you'll need it)"
           className="w-full rounded border border-neutral-300 px-3 py-2"
         />
       </div>
@@ -269,10 +269,10 @@ function Signup({
       {lifePassed &&
         (!videoWatched ? (
           <div className="flex flex-col items-center gap-2">
-            <p className="text-sm text-neutral-600">Watch this. Every second. The password is in here.</p>
+            <p className="text-sm text-neutral-600">Watch this. Every second. We’ll remind you of your password once.</p>
             <VideoGate
               videoId={SIGNUP_VIDEO}
-              reveal={PASSWORD}
+              reveal={password}
               label="Onboarding video (mandatory)"
               onComplete={() => {
                 setVideoWatched(true);
@@ -335,7 +335,7 @@ function Signup({
       )}
 
       <div className="pt-2">
-        <TeleportButton ready={ready} onClick={() => onDone(username)}>
+        <TeleportButton ready={ready} onClick={() => onDone(username, password)}>
           Create account
         </TeleportButton>
         {!ready && <p className="mt-2 text-xs text-neutral-400">Finish everything above. The button is shy.</p>}
